@@ -176,7 +176,17 @@ jobs:
       - name: Build sidecar (release)
         if: inputs.reuse_core_run_id == ''
         working-directory: eos-core-rs
-        run: cargo build --release --target ${{ matrix.triple }} -p eos-core-bin
+        shell: bash
+        env:
+          CHANNEL: ${{ inputs.channel || 'stable' }}
+          CORE_TARGET: ${{ matrix.triple }}
+        run: |
+          set -euo pipefail
+          args=(build --release --target "$CORE_TARGET" -p eos-core-bin)
+          if [[ "$CHANNEL" == dev ]]; then
+            args+=(--features dev-network-inspect,dev-agent-review)
+          fi
+          cargo "${args[@]}"
 
       - name: Test model input budget and protocol
         if: matrix.goos == 'linux' && matrix.goarch == 'amd64' && inputs.reuse_core_run_id == ''
